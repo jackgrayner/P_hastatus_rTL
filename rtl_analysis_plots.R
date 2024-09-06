@@ -8,6 +8,7 @@ library(ggbeeswarm)
 library(patchwork)
 library(ggeffects)
 library(ggExtra)
+library(viridis)
 
 #plot efficiency
 eff<-read.csv('./tel_efficiency.csv',h=T)
@@ -19,24 +20,21 @@ effplot<-ggplot(eff,aes(x=log10(dilution),y=Cp))+
   labs(subtitle="Tel slope = -3.237, amplification factor = 2.04, efficiency = 103.66%\nBDNF slope = -3.431, amplification factor = 1.96, efficiency = 95.63%")
 summary(lm(Cp~log10(dilution),dat=eff[eff$primers=="Tel",]))
 summary(lm(Cp~log10(dilution),dat=eff[eff$primers=="BDNF",]))
-ggsave('efficiency_plot.png',plot=effplot,dpi=600,height=4,width=6)
-#
+#ggsave('efficiency_plot.png',plot=effplot,dpi=600,height=4,width=6)
 
 #read in filtered data
-dat<-read.csv('/Users/Jack/Desktop/umd/manuscripts/iisage_telomere/all_tel_data_filtered_dryad.csv',h=T)
+dat<-read.csv('./all_tel_data.csv',h=T)
 dat$sex<-factor(dat$SEX)
-dat<-dat[!is.na(dat$CV_rtl),]#get rid of samples without replicate rTL
+dat<-dat[!is.na(dat$CV_rtl) | dat$band=="2311",]#get rid of samples without replicate rTL (but keep 2311 - calibrator sample)
 dat<-dat[dat$Season_sampled %in% c("Jan_23","Jan_24"),]#remove May '23 samples -- too few
 
-
 #estimate ages of unaged samples (all female) based on toothwear scores 
-summary(lm(Est.Age~TTH,data=dat[dat$sex=="F" & !dat$AgeSource=="ToothWear",]))
+Anova(lm(Est.Age~TTH,data=dat[dat$sex=="F" & !dat$AgeSource=="ToothWear",]))
 #plot relationship
 ggplot(dat,aes(x=TTH,y=Est.Age,colour=sex))+scale_colour_manual(values=c("#fa8490","#9fd4fc"))+
  theme_minimal()+geom_point()+geom_smooth(method='lm')
 
 #add estimate ages based on toothwear
-dat$tthage<-NA
 dat[dat$AgeSource=="ToothWear" & dat$sex=="F",]$Est.Age<-
  dat[dat$AgeSource=="ToothWear" & dat$sex=="F",]$TTH*3.1-0.6029
 
@@ -59,9 +57,8 @@ CV_BDNF<-ggplot(dat,aes(x=CV_BDNF))+geom_histogram(fill='#dddddd',colour='#55555
 #         CV_hist /
 #         (CV_tel|CV_BDNF),dpi=300,height=5,width=5.5)
 
-
 #remove samples with replicate rTL CoV > 0.5
-dat<-dat[!dat$CV_rtl>0.5 & !is.na(dat$tlmean),]
+dat<-dat[!dat$CV_rtl>0.5 & !is.na(dat$tlmean) | dat$band=="2311",]
 
 #replace missing rtl1 / rtl2 values with rtl3 where applicable
 dat[is.na(dat$rtl1),]$rtl1<-dat[is.na(dat$rtl1),]$rtl3
@@ -85,6 +82,8 @@ dupes<-dat[duplicated(dat$band),]$band
 dupes.df<-dat[dat$band %in% dupes,]
 dupes.df$band<-factor(dupes.df$band)
 dat<-dat[!(dat$band %in% dupes.df$band & dat$Season_sampled=="Jan_23"),]
+
+summary(factor(dat$AgeSource))
 
 #does it make a difference if we instead remove the jan_24 duplicate band values? - No
 #dat<-dat[!duplicated(dat$band),]
@@ -191,7 +190,10 @@ ggsave('fig1_size_rtl.png',dpi=600,height=7.5,width=6,
          ggMarginal(g.rtl,groupFill = TRUE,margins = 'x')+ labs(tag="C") + 
          plot_layout(heights = c(1, 1.75)))
 
+
 sessionInfo()
+
+write.csv(file='./Ph_rTL_analysed_data.csv',dat)
 
 # R version 4.3.1 (2023-06-16)
 # Platform: x86_64-apple-darwin20 (64-bit)
