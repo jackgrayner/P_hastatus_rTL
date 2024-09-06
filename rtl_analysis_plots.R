@@ -190,3 +190,43 @@ ggsave('fig1_size_rtl.png',dpi=600,height=7.5,width=6,
        plot=(g.fa | g.wt ) /
          ggMarginal(g.rtl,groupFill = TRUE,margins = 'x')+ labs(tag="C") + 
          plot_layout(heights = c(1, 1.75)))
+
+sessionInfo()
+
+# R version 4.3.1 (2023-06-16)
+# Platform: x86_64-apple-darwin20 (64-bit)
+# Running under: macOS Sonoma 14.5
+# 
+# Matrix products: default
+# BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
+# LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
+# 
+# locale:
+#  [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+# 
+# time zone: America/New_York
+# tzcode source: internal
+# 
+# attached base packages:
+#  [1] stats     graphics  grDevices utils     datasets  methods   base     
+# 
+# other attached packages:
+#  [1] viridis_0.6.4     viridisLite_0.4.2 ggExtra_0.10.1    ggeffects_1.6.0   patchwork_1.1.3   ggbeeswarm_0.7.2 
+# [7] car_3.1-2         carData_3.0-5     ggplot2_3.4.4    
+# 
+# loaded via a namespace (and not attached):
+#  [1] utf8_1.2.4             generics_0.1.3         lattice_0.22-5         hms_1.1.3             
+# [5] digest_0.6.33          magrittr_2.0.3         grid_4.3.1             fastmap_1.1.1         
+# [9] Matrix_1.6-1.1         backports_1.4.1        gridExtra_2.3          promises_1.2.1        
+# [13] mgcv_1.9-0             fansi_1.0.5            scales_1.2.1           abind_1.4-5           
+# [17] cli_3.6.1              shiny_1.7.5.1          crayon_1.5.2           rlang_1.1.2           
+# [21] ellipsis_0.3.2         munsell_0.5.0          splines_4.3.1          withr_2.5.2           
+# [25] datawizard_0.10.0      tools_4.3.1            checkmate_2.3.0        dplyr_1.1.3           
+# [29] colorspace_2.1-0       sjlabelled_1.2.0       httpuv_1.6.12          marginaleffects_0.22.0
+# [33] forcats_1.0.0          vctrs_0.6.4            R6_2.5.1               mime_0.12             
+# [37] lifecycle_1.0.4        snakecase_0.11.1       vipor_0.4.5            miniUI_0.1.1.1        
+# [41] insight_0.20.3         pkgconfig_2.0.3        beeswarm_0.4.0         pillar_1.9.0          
+# [45] later_1.3.1            gtable_0.3.4           glue_1.6.2             data.table_1.14.8     
+# [49] Rcpp_1.0.11            haven_2.5.3            tibble_3.2.1           tidyselect_1.2.0      
+# [53] rstudioapi_0.15.0      farver_2.1.1           xtable_1.8-4           htmltools_0.5.7       
+# [57] nlme_3.1-163           labeling_0.4.3         compiler_4.3.1        
