@@ -23,7 +23,7 @@ summary(lm(Cp~log10(dilution),dat=eff[eff$primers=="BDNF",]))
 #ggsave('efficiency_plot.png',plot=effplot,dpi=600,height=4,width=6)
 
 #read in filtered data
-dat<-read.csv('./Ph_rTL_data.csv',h=T)
+dat<-read.csv('./Ph_rTLdata.csv',h=T)
 dat$sex<-factor(dat$SEX)
 dat<-dat[!is.na(dat$CV_rtl) | dat$band=="2311",]#get rid of samples without replicate rTL (but keep 2311 - calibrator sample)
 dat<-dat[dat$Season_sampled %in% c("Jan_23","Jan_24"),]#remove May '23 samples -- too few
