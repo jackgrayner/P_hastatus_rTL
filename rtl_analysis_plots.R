@@ -195,6 +195,45 @@ sessionInfo()
 
 write.csv(file='./Ph_rTL_analysed_data.csv',dat)
 
+#bootstrap analysis
+set.seed(1)
+dat1<-dat
+res.df<-data.frame(iter=c(1:10000),Bage=NA,Page=NA,
+                   Bsex=NA,Psex=NA)
+median(abs(dat$rtl1-dat$rtl2), na.rm=TRUE)
+klw;
+age.mae<-1.004/2#divide by two because we alter the sign around 0
+tel.mae<-0.242/2#divide by two because we alter the sign around 0
+
+for (iter in c(1:10000)) {
+  dat1$Est.Age.MAE<-dat1$Est.Age+runif(nrow(dat1),min = -age.mae,max = age.mae)
+  dat1$log2tlmean.rep<-log2(dat1$tlmean+runif(nrow(dat1),min = -tel.mae,max = tel.mae))
+  rtl.lm<-lm(scale(log2tlmean.rep)~scale(FA,scale=FALSE)+scale(Est.Age.MAE,scale=FALSE)+
+               sex+population+Season_sampled+
+               scale(days_collection_to_assay,scale=FALSE)+
+               scale(days_since_calibrator_extracted,scale=FALSE),
+             data=dat1)
+  res.df[iter,]$Bage<-summary(rtl.lm)$coefficients[3,1]
+  res.df[iter,]$Page<-Anova(rtl.lm,type="II")[2,4]
+  res.df[iter,]$Bsex<-summary(rtl.lm)$coefficients[4,1]
+  res.df[iter,]$Psex<-Anova(rtl.lm,type="II")[3,4]
+}
+
+
+g.bage<-ggplot(res.df,aes(x=Bage))+geom_histogram()+theme_minimal()+xlab("Age estimate")+
+  geom_vline(xintercept=-0.051,colour='red',linetype='dashed')
+g.page<-ggplot(res.df,aes(x=Page))+geom_histogram()+theme_minimal()+
+  geom_vline(xintercept=0.017,colour='red',linetype='dashed')+xlab("Age P-value")
+g.bsex<-ggplot(res.df,aes(x=Bsex))+geom_histogram()+theme_minimal()+xlab("Sex estimate")+
+  geom_vline(xintercept=0.598,colour='red',linetype='dashed')
+g.psex<-ggplot(res.df,aes(x=Psex))+geom_histogram()+theme_minimal()+
+  geom_vline(xintercept=0.003,colour='red',linetype='dashed')+xlab("Sex P-value")
+
+g.bage+g.page+g.bsex+g.psex
+
+ggsave("rTL_boostraps.png",plot=g.bage+g.page+g.bsex+g.psex,dpi=600,width=6,height=5)
+
+
 # R version 4.3.1 (2023-06-16)
 # Platform: x86_64-apple-darwin20 (64-bit)
 # Running under: macOS Sonoma 14.5
