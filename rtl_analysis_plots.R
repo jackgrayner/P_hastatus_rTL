@@ -60,30 +60,37 @@ CV_BDNF<-ggplot(dat,aes(x=CV_BDNF))+geom_histogram(fill='#dddddd',colour='#55555
 #remove samples with replicate rTL CoV > 0.5
 dat<-dat[!dat$CV_rtl>0.5 & !is.na(dat$tlmean) | dat$band=="2311",]
 
+#intraplate repeatability
+library(rptR)
+dat1<-data.frame(band=rep(dat$band,3),tel=c(dat$tel2_a,dat$tel2_b,dat$tel2_c),plate=dat$plate)
+rpt.tel<-rpt(log2(tel) ~ plate+(1|band), grname = "band", data = dat1, datatype = "Gaussian", 
+    nboot = 1000, npermut = 0)
+
+dat1<-data.frame(band=rep(dat$band,3),bdnf=c(dat$bdnf2_a,dat$bdnf2_b,dat$bdnf2_c),plate=dat$plate)
+rtl.bdnf<-rpt(log2(bdnf) ~ plate+(1|band), grname = "band", data = dat1, datatype = "Gaussian", 
+    nboot = 1000, npermut = 0)
+
+#interplate repeatability
+dat1<-data.frame(band=rep(dat$band,3),rtl=c(dat$rtl1,dat$rtl2,dat$rtl3),MonthAssay=dat$MonthAssay,Season_sampled=dat$Season_sampled)
+rpt.rtl<-rpt(log2(rtl) ~ (1|band), grname = "band", data = dat1, datatype = "Gaussian", 
+    nboot = 1000, npermut = 0)
+
+png('repeatabilities.png',res=600,width = 4,height=6,unit='in')
+par(mfrow=c(3,1),mar=c(2,2,2,2))
+plot(rpt.tel,xlim=c(0,1),main="intraplate repeatability (Tel)")
+plot(rtl.bdnf,xlim=c(0,1),main="intraplate repeatability (BDNF)")
+plot(rpt.rtl,xlim=c(0,1),main="interplate repeatability (rTL)")
+dev.off()
+
 #replace missing rtl1 / rtl2 values with rtl3 where applicable
 dat[is.na(dat$rtl1),]$rtl1<-dat[is.na(dat$rtl1),]$rtl3
 dat[is.na(dat$rtl2),]$rtl2<-dat[is.na(dat$rtl2),]$rtl3
-
-#interplate correlation
-cor.test(log(dat$rtl1),log(dat$rtl2))
-
-#plot correlation between rtl1, rtl2
-g.rtlcor<-ggplot(dat,aes(x=log2(rtl1),y=log2(rtl2),colour=plate))+geom_point(alpha=0.75,size=0.75)+
-  geom_smooth(method='lm',se=FALSE,linewidth=0.5)+
-  geom_smooth(data=dat,aes(x=log2(rtl1),y=log2(rtl2)),colour='black',method='lm',se=TRUE,linewidth=1.5)+
-  xlab("Log2 rTL_1")+ylab("Log2 rTL_2")+
-  theme_bw()+scale_colour_viridis(discrete=TRUE)+
-  theme(legend.position='none')+
-  xlim(c(-1.5,1.5))+ylim(c(-1.5,1.5))
-#ggsave('rTL_replicate_correlation.png',plot=g.rtlcor,dpi=600,height=4,width=4)
 
 #remove jan_23 vals for duplicate bands
 dupes<-dat[duplicated(dat$band),]$band
 dupes.df<-dat[dat$band %in% dupes,]
 dupes.df$band<-factor(dupes.df$band)
 dat<-dat[!(dat$band %in% dupes.df$band & dat$Season_sampled=="Jan_23"),]
-
-summary(factor(dat$AgeSource))
 
 #does it make a difference if we instead remove the jan_24 duplicate band values? - No
 #dat<-dat[!duplicated(dat$band),]
@@ -147,27 +154,10 @@ summary(rtl.lm)
 Anova(rtl.lm,type="II")
 
 # plot adjusted predicted values of rTL across sexes and ages, based on rtl.lm model
-# we use the empirical marginilisation method. the other methods produce strange/uninterpretable plots,
-# on scales very different from the observed data.
-# the plot produced by the empirical marginilisation method is much more consistent with model results
-# and removal of highly collinear variables in the model causes the other methods to produce
-# plots much more similar to the empirical marginalisation plot.
-# empirical marginilisation also appears to be recommended when you have skewed non-focal variables,
+# empirical marginilisation appears to be recommended when you have skewed non-focal variables,
 # which we do (e.g., sig difference in number of Jan_23 and Jan_24 samples)
 g <- predict_response(rtl.lm, terms=c("Est.Age","sex"),back_transform = FALSE,margin='empirical',ci_level = 0.95) 
-# g <- predict_response(rtl.lm, terms=c("Est.Age","sex"),back_transform = FALSE,margin='marginalmeans',ci_level = 0.95) 
-# g <- predict_response(rtl.lm, terms=c("Est.Age","sex"),back_transform = FALSE,margin='mean_reference') 
-# ggPredict(rtl.lm, terms=c("Est.Age","sex"),interactive=TRUE) 
 g1<-data.frame(g)
-
-# this could be used to adjust raw data points in plot by mean difference between season_sampled
-# but we didn't do this for fig. 1
-# diffyear<-mean(dat[dat$Season_sampled=="Jan_24" & dat$sex=="F",]$log2tlmean)-
-#   mean(dat[dat$Season_sampled=="Jan_23" & dat$sex=="F",]$log2tlmean)
-# dat1<-dat
-# dat1[dat1$Season_sampled=="Jan_24",]$log2tlmean<-dat1[dat1$Season_sampled=="Jan_24",]$log2tlmean-diffyear
-# summary(dat[dat$Season_sampled=="Jan_24",]$log2tlmean)
-# summary(dat1[dat1$Season_sampled=="Jan_24",]$log2tlmean)
 
 g.rtl<-ggplot() +
   geom_line(data=g1[g1$group=="M",],aes(x=x,y=predicted),colour="#5090bf",size=1) +
@@ -178,7 +168,6 @@ g.rtl<-ggplot() +
   geom_ribbon(data=g1[g1$group=="F",],linetype='dotted',
              aes(x=x,y=predicted,ymin=conf.low,ymax=conf.high),alpha=0.2,colour="#fa8490",fill="#fa8490")+
   geom_point(data=dat,aes(x=Est.Age,y=log2tlmean,colour=sex),alpha=0.6)+
- # geom_smooth(data=dat,aes(x=Est.Age,y=log2tlmean,colour=sex),alpha=0.6,method='lm')+
   scale_x_continuous(breaks=seq(1,20,2))+
   labs(x = "Age",y = "log2 rTL",color = "Sex") +
   theme_minimal()+scale_colour_manual(values=c("#fa8490","#5090bf"))+
@@ -189,9 +178,6 @@ ggsave('fig1_size_rtl.png',dpi=600,height=7.5,width=6,
        plot=(g.fa | g.wt ) /
          ggMarginal(g.rtl,groupFill = TRUE,margins = 'x')+ labs(tag="C") + 
          plot_layout(heights = c(1, 1.75)))
-
-
-sessionInfo()
 
 write.csv(file='./Ph_rTL_analysed_data.csv',dat)
 
@@ -233,6 +219,7 @@ g.bage+g.page+g.bsex+g.psex
 
 ggsave("rTL_boostraps.png",plot=g.bage+g.page+g.bsex+g.psex,dpi=600,width=6,height=5)
 
+sessionInfo()
 
 # R version 4.3.1 (2023-06-16)
 # Platform: x86_64-apple-darwin20 (64-bit)
