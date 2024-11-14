@@ -9,6 +9,7 @@ library(patchwork)
 library(ggeffects)
 library(ggExtra)
 library(viridis)
+library(rptR)
 
 #plot efficiency
 eff<-read.csv('./tel_efficiency.csv',h=T)
@@ -30,38 +31,15 @@ dat<-dat[dat$Season_sampled %in% c("Jan_23","Jan_24"),]#remove May '23 samples -
 
 #estimate ages of unaged samples (all female) based on toothwear scores 
 Anova(lm(Est.Age~TTH,data=dat[dat$sex=="F" & !dat$AgeSource=="ToothWear",]))
-#plot relationship
 ggplot(dat,aes(x=TTH,y=Est.Age,colour=sex))+scale_colour_manual(values=c("#fa8490","#9fd4fc"))+
  theme_minimal()+geom_point()+geom_smooth(method='lm')
-
-#add estimate ages based on toothwear
 dat[dat$AgeSource=="ToothWear" & dat$sex=="F",]$Est.Age<-
  dat[dat$AgeSource=="ToothWear" & dat$sex=="F",]$TTH*3.1-0.6029
-
-#plot rTL CoV histogram
-CV_hist<-ggplot(dat,aes(x=CV_rtl))+geom_histogram(fill='#dddddd',colour='#555555')+theme_bw()+
-  geom_vline(xintercept=0.5,colour='darkred',linetype='dashed')+
-  geom_vline(xintercept=median(dat$CV_rtl),colour='blue',linetype='dashed')+
-  xlim(c(0,1))+labs(tag="A")
-# ggsave('rTL_CoV_hist.png',plot=CV_hist,dpi=300,height=3,width=4)
-
-#plot primer CoV histograms
-CV_tel<-ggplot(dat,aes(x=CV_tel))+
-  geom_histogram(fill='#dddddd',colour='#555555',bins=100)+theme_bw()+
-  geom_vline(xintercept=median(dat$CV_tel,na.rm = TRUE),colour='darkblue',linetype='dashed')+
-  xlim(c(0,1))+labs(tag="B")
-CV_BDNF<-ggplot(dat,aes(x=CV_BDNF))+geom_histogram(fill='#dddddd',colour='#555555',bins=100)+theme_bw()+
-  geom_vline(xintercept=median(dat$CV_BDNF,na.rm = TRUE),colour='darkblue',linetype='dashed')+
-  xlim(c(0,1))+labs(tag="C")
-#ggsave('rTL_CoV_rTL_Tel_BDNF.png',plot=
-#         CV_hist /
-#         (CV_tel|CV_BDNF),dpi=300,height=5,width=5.5)
 
 #remove samples with replicate rTL CoV > 0.5
 dat<-dat[!dat$CV_rtl>0.5 & !is.na(dat$tlmean) | dat$band=="2311",]
 
 #intraplate repeatability
-library(rptR)
 dat1<-data.frame(band=rep(dat$band,3),tel=c(dat$tel2_a,dat$tel2_b,dat$tel2_c),plate=dat$plate)
 rpt.tel<-rpt(log2(tel) ~ plate+(1|band), grname = "band", data = dat1, datatype = "Gaussian", 
     nboot = 1000, npermut = 0)
@@ -81,10 +59,6 @@ plot(rpt.tel,xlim=c(0,1),main="intraplate repeatability (Tel)")
 plot(rtl.bdnf,xlim=c(0,1),main="intraplate repeatability (BDNF)")
 plot(rpt.rtl,xlim=c(0,1),main="interplate repeatability (rTL)")
 dev.off()
-
-#replace missing rtl1 / rtl2 values with rtl3 where applicable
-dat[is.na(dat$rtl1),]$rtl1<-dat[is.na(dat$rtl1),]$rtl3
-dat[is.na(dat$rtl2),]$rtl2<-dat[is.na(dat$rtl2),]$rtl3
 
 #remove jan_23 vals for duplicate bands
 dupes<-dat[duplicated(dat$band),]$band
@@ -187,7 +161,6 @@ dat1<-dat
 res.df<-data.frame(iter=c(1:10000),Bage=NA,Page=NA,
                    Bsex=NA,Psex=NA)
 median(abs(dat$rtl1-dat$rtl2), na.rm=TRUE)
-klw;
 age.mae<-1.004/2#divide by two because we alter the sign around 0
 tel.mae<-0.242/2#divide by two because we alter the sign around 0
 
@@ -205,7 +178,6 @@ for (iter in c(1:10000)) {
   res.df[iter,]$Psex<-Anova(rtl.lm,type="II")[3,4]
 }
 
-
 g.bage<-ggplot(res.df,aes(x=Bage))+geom_histogram()+theme_minimal()+xlab("Age estimate")+
   geom_vline(xintercept=-0.051,colour='red',linetype='dashed')
 g.page<-ggplot(res.df,aes(x=Page))+geom_histogram()+theme_minimal()+
@@ -214,8 +186,6 @@ g.bsex<-ggplot(res.df,aes(x=Bsex))+geom_histogram()+theme_minimal()+xlab("Sex es
   geom_vline(xintercept=0.598,colour='red',linetype='dashed')
 g.psex<-ggplot(res.df,aes(x=Psex))+geom_histogram()+theme_minimal()+
   geom_vline(xintercept=0.003,colour='red',linetype='dashed')+xlab("Sex P-value")
-
-g.bage+g.page+g.bsex+g.psex
 
 ggsave("rTL_boostraps.png",plot=g.bage+g.page+g.bsex+g.psex,dpi=600,width=6,height=5)
 
